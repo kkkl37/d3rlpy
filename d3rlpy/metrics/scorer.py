@@ -643,10 +643,10 @@ def evaluate_on_environment_estimate_q(
                         action = algo.predict([stacked_observation.eval()])[0]
                     else:
                         action = algo.predict([observation])[0]
-
-                next_values = algo.predict_value([observation], action)[0]
                 
                 observation, reward, done, _ = env.step(action)
+
+                next_values = algo.predict_value([observation], action)[0]
 
                 estimate_rewards.append(next_values)
 
