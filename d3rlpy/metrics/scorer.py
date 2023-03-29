@@ -574,12 +574,9 @@ def evaluate_on_environment_true_q(
             )
 
         true_q = []
-        # estimate_q = []
         for _ in range(n_trials):
             observation = env.reset()
             step_reward = 0.0
-            step_rewards = []
-            # estimate_rewards = []
 
             # frame stacking
             if is_image:
@@ -602,7 +599,6 @@ def evaluate_on_environment_true_q(
                 # estimate_rewards.append(next_values)
 
                 step_reward += algo.gamma*reward
-                step_rewards.append(step_reward)
 
                 if is_image:
                     stacked_observation.append(observation)
@@ -612,13 +608,9 @@ def evaluate_on_environment_true_q(
 
                 if done:
                     break
-            true_q.append(step_rewards)
-            # estimate_q.append(estimate_rewards)
-            # step_rewards.append(step_reward)
-        true_q = np.array(true_q)
-        # estimate_q = np.array(estimate_q)
-        # return np.mean(true_q, axis=0), np.mean(estimate_q, axis=0)
-        return np.mean(true_q, axis=0)
+                
+            true_q.append(step_reward)
+        return float(np.mean(true_q))
     return scorer
 
 def evaluate_on_environment_estimate_q(
@@ -670,13 +662,9 @@ def evaluate_on_environment_estimate_q(
                 observation_shape, algo.n_frames
             )
 
-        # true_q = []
         estimate_q = []
         for _ in range(n_trials):
             observation = env.reset()
-            step_reward = 0.0
-            # step_rewards = []
-            estimate_rewards = []
 
             # frame stacking
             if is_image:
@@ -696,10 +684,6 @@ def evaluate_on_environment_estimate_q(
                 observation, reward, done, _ = env.step(action)
 
                 next_values = algo.predict_value(observation, action)[0]
-                estimate_rewards.append(next_values)
-
-                # step_reward += algo.gamma*reward
-                # step_rewards.append(step_reward)
 
                 if is_image:
                     stacked_observation.append(observation)
@@ -709,15 +693,13 @@ def evaluate_on_environment_estimate_q(
 
                 if done:
                     break
-            # true_q.append(step_rewards)
-            estimate_q.append(estimate_rewards)
-            # step_rewards.append(step_reward)
-        # true_q = np.array(true_q)
-        estimate_q = np.array(estimate_q)
-        return np.mean(estimate_q, axis=0)
-        # return np.mean(true_q, axis=0)
+            
+                if done:
+                    break
+                
+            estimate_q.append(next_values)
+        return float(np.mean(estimate_q))
     return scorer
-
 
 def dynamics_observation_prediction_error_scorer(
     dynamics: DynamicsProtocol, episodes: List[Episode]
