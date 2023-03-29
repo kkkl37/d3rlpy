@@ -572,7 +572,7 @@ def evaluate_on_environment_true_q(
 
                 if done:
                     break
-            true_q.append(step_rewards)
+            true_q.append(step_reward)
             
         return float(np.mean(true_q))
 
@@ -631,8 +631,6 @@ def evaluate_on_environment_estimate_q(
         estimate_q = []
         for _ in range(n_trials):
             observation = env.reset()
-            step_reward = 0.0
-            # step_rewards = []
             estimate_rewards = []
 
             # frame stacking
