@@ -557,10 +557,6 @@ def evaluate_on_environment_true_q(
                         action = algo.predict([observation])[0]
 
                 observation, reward, done, _ = env.step(action)
-
-                # next_values = algo.predict_value(observation, action)[0]
-                # estimate_rewards.append(next_values)
-
                 step_reward += algo.gamma*reward
                 
 
@@ -648,9 +644,10 @@ def evaluate_on_environment_estimate_q(
                     else:
                         action = algo.predict([observation])[0]
 
+                next_values = algo.predict_value(observation, action)[0]
+                
                 observation, reward, done, _ = env.step(action)
 
-                next_values = algo.predict_value(observation, action)[0]
                 estimate_rewards.append(next_values)
 
                 # step_reward += algo.gamma*reward
