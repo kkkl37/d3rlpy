@@ -239,41 +239,6 @@ def value_estimation_std_scorer(
     return float(np.mean(total_stds))
 
 
-# def initial_state_value_estimation_scorer(
-#     algo: AlgoProtocol, episodes: List[Episode]
-# ) -> float:
-#     r"""Returns mean estimated action-values at the initial states.
-
-#     This metrics suggests how much return the trained policy would get from
-#     the initial states by deploying the policy to the states.
-#     If the estimated value is large, the trained policy is expected to get
-#     higher returns.
-
-#     .. math::
-
-#         \mathbb{E}_{s_0 \sim D} [Q(s_0, \pi(s_0))]
-
-#     References:
-#         * `Paine et al., Hyperparameter Selection for Offline Reinforcement
-#           Learning <https://arxiv.org/abs/2007.09055>`_
-
-#     Args:
-#         algo: algorithm.
-#         episodes: list of episodes.
-
-#     Returns:
-#         mean action-value estimation at the initial states.
-
-#     """
-#     total_values = []
-#     for episode in episodes:
-#         for batch in _make_batches(episode, WINDOW_SIZE, algo.n_frames):
-#             # estimate action-value in initial states
-#             actions = algo.predict([batch.observations[0]])
-#             values = algo.predict_value([batch.observations[0]], actions)
-#             total_values.append(values[0])
-#     return float(np.mean(total_values))
-
 def initial_state_value_estimation_scorer(
     algo: AlgoProtocol, episodes: List[Episode]
 ) -> float:
@@ -307,8 +272,7 @@ def initial_state_value_estimation_scorer(
             actions = algo.predict([batch.observations[0]])
             values = algo.predict_value([batch.observations[0]], actions)
             total_values.append(values[0])
-    return total_values
-
+    return float(np.mean(total_values))
 
 
 def soft_opc_scorer(
@@ -523,7 +487,6 @@ def evaluate_on_environment(
 
     return scorer
 
-import numpy as np
 def evaluate_on_environment_true_q(
     env: gym.Env, n_trials: int = 10, epsilon: float = 0.0, render: bool = False
 ) -> Callable[..., float]:
@@ -599,6 +562,7 @@ def evaluate_on_environment_true_q(
                 # estimate_rewards.append(next_values)
 
                 step_reward += algo.gamma*reward
+                
 
                 if is_image:
                     stacked_observation.append(observation)
@@ -608,9 +572,10 @@ def evaluate_on_environment_true_q(
 
                 if done:
                     break
-                
-            true_q.append(step_reward)
+            true_q.append(step_rewards)
+            
         return float(np.mean(true_q))
+
     return scorer
 
 def evaluate_on_environment_estimate_q(
@@ -662,9 +627,13 @@ def evaluate_on_environment_estimate_q(
                 observation_shape, algo.n_frames
             )
 
+        # true_q = []
         estimate_q = []
         for _ in range(n_trials):
             observation = env.reset()
+            step_reward = 0.0
+            # step_rewards = []
+            estimate_rewards = []
 
             # frame stacking
             if is_image:
@@ -684,6 +653,10 @@ def evaluate_on_environment_estimate_q(
                 observation, reward, done, _ = env.step(action)
 
                 next_values = algo.predict_value(observation, action)[0]
+                estimate_rewards.append(next_values)
+
+                # step_reward += algo.gamma*reward
+                # step_rewards.append(step_reward)
 
                 if is_image:
                     stacked_observation.append(observation)
@@ -693,13 +666,10 @@ def evaluate_on_environment_estimate_q(
 
                 if done:
                     break
-            
-                if done:
-                    break
-                
-            estimate_q.append(next_values)
+            estimate_q.append(estimate_rewards)
         return float(np.mean(estimate_q))
     return scorer
+
 
 def dynamics_observation_prediction_error_scorer(
     dynamics: DynamicsProtocol, episodes: List[Episode]
