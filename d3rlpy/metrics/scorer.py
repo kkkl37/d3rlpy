@@ -719,6 +719,37 @@ def evaluate_on_environment_estimate_q(
     return scorer
 
 
+def dynamics_observation_prediction_error_scorer(
+    dynamics: DynamicsProtocol, episodes: List[Episode]
+) -> float:
+    r"""Returns MSE of observation prediction.
+
+    This metrics suggests how dynamics model is generalized to test sets.
+    If the MSE is large, the dynamics model are overfitting.
+
+    .. math::
+
+        \mathbb{E}_{s_t, a_t, s_{t+1} \sim D} [(s_{t+1} - s')^2]
+
+    where :math:`s' \sim T(s_t, a_t)`.
+
+    Args:
+        dynamics: dynamics model.
+        episodes: list of episodes.
+
+    Returns:
+        mean squared error.
+
+    """
+    total_errors = []
+    for episode in episodes:
+        for batch in _make_batches(episode, WINDOW_SIZE, dynamics.n_frames):
+            pred = dynamics.predict(batch.observations, batch.actions)
+            errors = ((batch.next_observations - pred[0]) ** 2).sum(axis=1)
+            total_errors += errors.tolist()
+    return float(np.mean(total_errors))
+
+
 def dynamics_reward_prediction_error_scorer(
     dynamics: DynamicsProtocol, episodes: List[Episode]
 ) -> float:
