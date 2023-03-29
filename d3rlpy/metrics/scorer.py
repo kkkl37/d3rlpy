@@ -524,8 +524,7 @@ def discrete_action_match_scorer(
 #     return scorer
 
 import numpy as np
-import numpy as np
-def evaluate_on_environment(
+def evaluate_on_environment_true_q(
     env: gym.Env, n_trials: int = 10, epsilon: float = 0.0, render: bool = False
 ) -> Callable[..., float]:
     """Returns scorer function of evaluation on environment.
@@ -575,11 +574,108 @@ def evaluate_on_environment(
             )
 
         true_q = []
-        estimate_q = []
+        # estimate_q = []
         for _ in range(n_trials):
             observation = env.reset()
             step_reward = 0.0
             step_rewards = []
+            # estimate_rewards = []
+
+            # frame stacking
+            if is_image:
+                stacked_observation.clear()
+                stacked_observation.append(observation)
+
+            while True:
+                # take action
+                if np.random.random() < epsilon:
+                    action = env.action_space.sample()
+                else:
+                    if is_image:
+                        action = algo.predict([stacked_observation.eval()])[0]
+                    else:
+                        action = algo.predict([observation])[0]
+
+                observation, reward, done, _ = env.step(action)
+
+                # next_values = algo.predict_value(observation, action)[0]
+                # estimate_rewards.append(next_values)
+
+                step_reward += algo.gamma*reward
+                step_rewards.append(step_reward)
+
+                if is_image:
+                    stacked_observation.append(observation)
+
+                if render:
+                    env.render()
+
+                if done:
+                    break
+            true_q.append(step_rewards)
+            # estimate_q.append(estimate_rewards)
+            # step_rewards.append(step_reward)
+        true_q = np.array(true_q)
+        # estimate_q = np.array(estimate_q)
+        # return np.mean(true_q, axis=0), np.mean(estimate_q, axis=0)
+        return np.mean(true_q, axis=0)
+    return scorer
+
+def evaluate_on_environment_estimate_q(
+    env: gym.Env, n_trials: int = 10, epsilon: float = 0.0, render: bool = False
+) -> Callable[..., float]:
+    """Returns scorer function of evaluation on environment.
+
+    This function returns scorer function, which is suitable to the standard
+    scikit-learn scorer function style.
+    The metrics of the scorer function is ideal metrics to evaluate the
+    resulted policies.
+
+    .. code-block:: python
+
+        import gym
+
+        from d3rlpy.algos import DQN
+        from d3rlpy.metrics.scorer import evaluate_on_environment
+
+
+        env = gym.make('CartPole-v0')
+
+        scorer = evaluate_on_environment(env)
+
+        cql = CQL()
+
+        mean_episode_return = scorer(cql)
+
+
+    Args:
+        env: gym-styled environment.
+        n_trials: the number of trials.
+        epsilon: noise factor for epsilon-greedy policy.
+        render: flag to render environment.
+
+    Returns:
+        scoerer function.
+
+
+    """
+
+    # for image observation
+    observation_shape = env.observation_space.shape
+    is_image = len(observation_shape) == 3
+
+    def scorer(algo: AlgoProtocol, *args: Any) -> float:
+        if is_image:
+            stacked_observation = StackedObservation(
+                observation_shape, algo.n_frames
+            )
+
+        # true_q = []
+        estimate_q = []
+        for _ in range(n_trials):
+            observation = env.reset()
+            step_reward = 0.0
+            # step_rewards = []
             estimate_rewards = []
 
             # frame stacking
@@ -602,8 +698,8 @@ def evaluate_on_environment(
                 next_values = algo.predict_value(observation, action)[0]
                 estimate_rewards.append(next_values)
 
-                step_reward += algo.gamma*reward
-                step_rewards.append(step_reward)
+                # step_reward += algo.gamma*reward
+                # step_rewards.append(step_reward)
 
                 if is_image:
                     stacked_observation.append(observation)
@@ -613,45 +709,14 @@ def evaluate_on_environment(
 
                 if done:
                     break
-            true_q.append(step_rewards)
+            # true_q.append(step_rewards)
             estimate_q.append(estimate_rewards)
             # step_rewards.append(step_reward)
-        true_q = np.array(true_q)
+        # true_q = np.array(true_q)
         estimate_q = np.array(estimate_q)
-        return np.mean(true_q, axis=0), np.mean(estimate_q, axis=0)
-
+        return np.mean(estimate_q, axis=0)
+        # return np.mean(true_q, axis=0)
     return scorer
-
-
-def dynamics_observation_prediction_error_scorer(
-    dynamics: DynamicsProtocol, episodes: List[Episode]
-) -> float:
-    r"""Returns MSE of observation prediction.
-
-    This metrics suggests how dynamics model is generalized to test sets.
-    If the MSE is large, the dynamics model are overfitting.
-
-    .. math::
-
-        \mathbb{E}_{s_t, a_t, s_{t+1} \sim D} [(s_{t+1} - s')^2]
-
-    where :math:`s' \sim T(s_t, a_t)`.
-
-    Args:
-        dynamics: dynamics model.
-        episodes: list of episodes.
-
-    Returns:
-        mean squared error.
-
-    """
-    total_errors = []
-    for episode in episodes:
-        for batch in _make_batches(episode, WINDOW_SIZE, dynamics.n_frames):
-            pred = dynamics.predict(batch.observations, batch.actions)
-            errors = ((batch.next_observations - pred[0]) ** 2).sum(axis=1)
-            total_errors += errors.tolist()
-    return float(np.mean(total_errors))
 
 
 def dynamics_reward_prediction_error_scorer(
