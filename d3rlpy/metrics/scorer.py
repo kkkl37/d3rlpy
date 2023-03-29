@@ -524,6 +524,7 @@ def discrete_action_match_scorer(
 #     return scorer
 
 import numpy as np
+import numpy as np
 def evaluate_on_environment(
     env: gym.Env, n_trials: int = 10, epsilon: float = 0.0, render: bool = False
 ) -> Callable[..., float]:
@@ -573,11 +574,13 @@ def evaluate_on_environment(
                 observation_shape, algo.n_frames
             )
 
-        res = []
+        true_q = []
+        estimate_q = []
         for _ in range(n_trials):
             observation = env.reset()
             step_reward = 0.0
             step_rewards = []
+            estimate_rewards = []
 
             # frame stacking
             if is_image:
@@ -595,7 +598,11 @@ def evaluate_on_environment(
                         action = algo.predict([observation])[0]
 
                 observation, reward, done, _ = env.step(action)
-                step_reward += reward
+
+                next_values = algo.predict_value(observation, action)[0]
+                estimate_rewards.append(next_values)
+
+                step_reward += algo.gamma*reward
                 step_rewards.append(step_reward)
 
                 if is_image:
@@ -606,10 +613,12 @@ def evaluate_on_environment(
 
                 if done:
                     break
-            res.append(step_rewards)
+            true_q.append(step_rewards)
+            estimate_q.append(estimate_rewards)
             # step_rewards.append(step_reward)
-        res = np.array(res)
-        return np.mean(res, axis=0)
+        true_q = np.array(true_q)
+        estimate_q = np.array(estimate_q)
+        return np.mean(true_q, axis=0), np.mean(estimate_q, axis=0)
 
     return scorer
 
