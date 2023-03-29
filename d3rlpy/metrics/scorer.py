@@ -540,6 +540,7 @@ def evaluate_on_environment_true_q(
         for _ in range(n_trials):
             observation = env.reset()
             step_reward = 0.0
+            step_rewards = [step_reward]
 
             # frame stacking
             if is_image:
@@ -558,7 +559,7 @@ def evaluate_on_environment_true_q(
 
                 observation, reward, done, _ = env.step(action)
                 step_reward += algo.gamma*reward
-                
+                step_rewards.append(step_reward)
 
                 if is_image:
                     stacked_observation.append(observation)
@@ -568,9 +569,9 @@ def evaluate_on_environment_true_q(
 
                 if done:
                     break
-            true_q.append(step_reward)
-            
-        return float(np.mean(true_q))
+            true_q.append(step_rewards)
+        true_q = np.array(true_q)
+        return np.mean(true_q,axis = 0)
 
     return scorer
 
@@ -623,11 +624,10 @@ def evaluate_on_environment_estimate_q(
                 observation_shape, algo.n_frames
             )
 
-        # true_q = []
         estimate_q = []
         for _ in range(n_trials):
             observation = env.reset()
-            estimate_rewards = []
+            estimate_reward = []
 
             # frame stacking
             if is_image:
@@ -646,12 +646,7 @@ def evaluate_on_environment_estimate_q(
                 
                 observation, reward, done, _ = env.step(action)
 
-                next_values = algo.predict_value([observation], algo.predict([observation]))[0]
-
-                estimate_rewards.append(next_values)
-
-                # step_reward += algo.gamma*reward
-                # step_rewards.append(step_reward)
+                next_values = algo.predict_value([observation], [action])[0]
 
                 if is_image:
                     stacked_observation.append(observation)
@@ -661,8 +656,11 @@ def evaluate_on_environment_estimate_q(
 
                 if done:
                     break
-            estimate_q.append(estimate_rewards)
-        return float(np.mean(estimate_q))
+                estimate_reward.append(next_values)
+            estimate_q.append(estimate_reward)
+        estimate_q = np.array(estimate_q)
+        return np.mean(estimate_q,axis = 0)
+
     return scorer
 
 

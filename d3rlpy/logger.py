@@ -115,7 +115,12 @@ class D3RLPyLogger:
     def commit(self, epoch: int, step: int) -> Dict[str, float]:
         metrics = {}
         for name, buffer in self._metrics_buffer.items():
-            metric = sum(buffer) / len(buffer)
+            
+            try:
+                metric = sum(buffer) / len(buffer)
+            except:
+                metric = np.mean(buffer, axis=0)
+            # metric = sum(buffer) / len(buffer)
 
             if self._save_metrics:
                 path = os.path.join(self._logdir, f"{name}.csv")
