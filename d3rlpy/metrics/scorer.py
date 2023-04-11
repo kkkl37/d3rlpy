@@ -541,7 +541,7 @@ def evaluate_on_environment_true_q(
         for _ in range(n_trials):
             observation = env.reset()
             step_reward = 0.0
-            step_rewards = [step_reward]
+            # step_rewards = [step_reward]
 
             # frame stacking
             if is_image:
@@ -560,7 +560,7 @@ def evaluate_on_environment_true_q(
 
                 observation, reward, done, _ = env.step(action)
                 step_reward += algo.gamma*reward
-                step_rewards.append(step_reward)
+                # step_rewards.append(step_reward)
 
                 if is_image:
                     stacked_observation.append(observation)
@@ -570,7 +570,7 @@ def evaluate_on_environment_true_q(
 
                 if done:
                     break
-            true_q.append(np.mean(step_rewards))
+            true_q.append(step_reward)
         # true_q = np.array(true_q)
         # return np.mean(true_q,axis = 0)
         return np.mean(true_q)
@@ -630,7 +630,7 @@ def evaluate_on_environment_estimate_q(
         n_trials = 0
         for _ in range(n_trials):
             observation = env.reset()
-            estimate_reward = []
+            # estimate_reward = []
 
             # frame stacking
             if is_image:
@@ -659,8 +659,8 @@ def evaluate_on_environment_estimate_q(
 
                 if done:
                     break
-                estimate_reward.append(next_values)
-            estimate_q.append(np.mean(estimate_reward))
+                # estimate_reward.append(next_values)
+            estimate_q.append(next_values)
         # estimate_q = np.array(estimate_q)
         # return np.mean(estimate_q,axis = 0)
         return np.mean(estimate_q)
