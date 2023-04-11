@@ -570,7 +570,7 @@ def evaluate_on_environment_true_q(
 
                 if done:
                     break
-            true_q.append(step_rewards)
+            true_q.append(np.mean(step_rewards))
         # true_q = np.array(true_q)
         # return np.mean(true_q,axis = 0)
         return np.mean(true_q)
@@ -660,7 +660,7 @@ def evaluate_on_environment_estimate_q(
                 if done:
                     break
                 estimate_reward.append(next_values)
-            estimate_q.append(estimate_reward)
+            estimate_q.append(np.mean(estimate_reward))
         # estimate_q = np.array(estimate_q)
         # return np.mean(estimate_q,axis = 0)
         return np.mean(estimate_q)
