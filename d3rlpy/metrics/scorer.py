@@ -537,6 +537,7 @@ def evaluate_on_environment_true_q(
             )
 
         true_q = []
+        n_trials = 0
         for _ in range(n_trials):
             observation = env.reset()
             step_reward = 0.0
@@ -570,8 +571,9 @@ def evaluate_on_environment_true_q(
                 if done:
                     break
             true_q.append(step_rewards)
-        true_q = np.array(true_q)
-        return np.mean(true_q,axis = 0)
+        # true_q = np.array(true_q)
+        # return np.mean(true_q,axis = 0)
+        return np.mean(true_q)
 
     return scorer
 
@@ -625,6 +627,7 @@ def evaluate_on_environment_estimate_q(
             )
 
         estimate_q = []
+        n_trials = 0
         for _ in range(n_trials):
             observation = env.reset()
             estimate_reward = []
@@ -658,8 +661,9 @@ def evaluate_on_environment_estimate_q(
                     break
                 estimate_reward.append(next_values)
             estimate_q.append(estimate_reward)
-        estimate_q = np.array(estimate_q)
-        return np.mean(estimate_q,axis = 0)
+        # estimate_q = np.array(estimate_q)
+        # return np.mean(estimate_q,axis = 0)
+        return np.mean(estimate_q)
 
     return scorer
 
